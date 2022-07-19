@@ -1,0 +1,6 @@
+azure-functions
+selenium
+Pillow
+numpy
+opencv-python
+pytesseract
