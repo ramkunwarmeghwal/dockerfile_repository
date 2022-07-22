@@ -1,7 +1,13 @@
 from copy import error
 import logging
 
-import azure.functions as func
+import os
+from flask import Flask
+app = Flask(__name__)
+
+
+
+#import azure.functions as func
 from selenium import webdriver
 from concurrent.futures.thread import ThreadPoolExecutor
 #from azure.identity import DefaultAzureCredential, ClientSecretCredential
@@ -29,7 +35,7 @@ def captcha(data):
     print("captcha start")
     def ocr_core(img):
         try:
-            text = pytesseract.image_to_string(img) 
+            text = pytesseract.image_to_string(img)
             return text
         except Exception as e:
             print(e)
@@ -66,7 +72,7 @@ def  scraper(cin, max_attempt, result, errCins):
     try:
         print(cin)
         lists = get_directors_info(cin,  max_attempt)
-        
+
         result.append({cin:lists})
     except:
         errCins.append(cin)
@@ -80,31 +86,46 @@ def get_or_create_eventloop():
             asyncio.set_event_loop(loop)
             return asyncio.get_event_loop()
 
-def main(req: func.HttpRequest) -> func.HttpResponse:
-    logging.info('Python HTTP trigger function processed a request.')
-    req_body = req.get_json()
-    cinList  = req_body.get('cins')
-    max_attempt  = req_body.get('max_attempt',20)
+
+
+
+
+
+
+
+
+@app.route('/')
+def abc():
+    cinList  = ["U01110AN2016PTC005317","U65921AP1996PTC025131"]
+    max_attempt  = 10
     errCins=[]
     result =[]
     executor = ThreadPoolExecutor(len(cinList))
 
     for cin in cinList:
-        executor.submit(scraper,cin, max_attempt, result, errCins)
-        #await scrape(cin, max_attempt, result, errCins, executor,  loop=loop)
+      executor.submit(scraper,cin, max_attempt, result, errCins)
+      #await scrape(cin, max_attempt, result, errCins, executor,  loop=loop)
 
-    executor.shutdown(wait=True) 
+    executor.shutdown(wait=True)
     #loop.run_until_complete(asyncio.gather(*asyncio.all_tasks(loop)))
     resp ={
-        "result": result,
-        "errCins":errCins,
-        "status_code":200
+      "result": result,
+      "errCins":errCins,
+      "status_code":200
     }
-    print(json.dumps(resp))
-    return func.HttpResponse(
-        json.dumps(resp),
-        mimetype="application/json",
-    )
+    return(json.dumps(resp))
+
+if __name__ == "__main__":
+   app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+
+
+
+
+
+
+
+
+
 
 def test():
     cinList  = ["U01110AN2016PTC005317","U65921AP1996PTC025131"]
@@ -117,7 +138,7 @@ def test():
         executor.submit(scraper,cin, max_attempt, result, errCins)
         #await scrape(cin, max_attempt, result, errCins, executor,  loop=loop)
 
-    executor.shutdown(wait=True) 
+    executor.shutdown(wait=True)
     #loop.run_until_complete(asyncio.gather(*asyncio.all_tasks(loop)))
     resp ={
         "result": result,
@@ -129,8 +150,8 @@ def test():
         json.dumps(resp),
         mimetype="application/json",
     )
-    
-    
+
+
 def get_directors_info(cin, max_attempt = 20):
     my_list = []
     print("cin:",cin)
@@ -140,7 +161,7 @@ def get_directors_info(cin, max_attempt = 20):
             if i == max_attempt: #100:
                 print("Not able to get the response even after"+str()+" attempt")
                 return #sys.exit()
-            
+
             #driver = webdriver.Chrome("/Users/vishwanathmk/Downloads/chromedriver", chrome_options=chrome_options)
             #driver.get('http://www.ubuntu.com/')
             chrome_options = webdriver.ChromeOptions()
@@ -154,7 +175,7 @@ def get_directors_info(cin, max_attempt = 20):
             driver = webdriver.Chrome(chrome_driver_path, chrome_options=chrome_options)
             print("XXXXXXXXXXXXXXXXXXXX2")
             url = 'https://www.mca.gov.in/content/mca/global/en/mca/master-data/view-compnay-or-llp-master-data.html'
-            
+
             driver.get(url) #scrape(url, driver, executor,  loop)
             print("XXXXXXXXXXXXXXXXXXXX3")
             #driver.get()
@@ -180,7 +201,7 @@ def get_directors_info(cin, max_attempt = 20):
             im.save(buffered, format="PNG")
             img_str = base64.b64encode(buffered.getvalue())
             encoded_string = str(img_str).lstrip("b'")
-                                    
+
             encoded_string = str(encoded_string).rstrip("'")
             #print(encoded_string)
 
@@ -206,7 +227,7 @@ def get_directors_info(cin, max_attempt = 20):
             except:
                 print("Correct Captcha")
                 break
-            
+
             #//*[@id="resultTab6"]/tbody/tr[2]/td[2]  //*[@id="resultTab6"]/tbody/tr[2]/td[2]
     no_rows = len(driver.find_elements_by_xpath('//*[@id="resultTab6"]/tbody/tr'))
     no_col = len(driver.find_elements_by_xpath('//*[@id="resultTab6"]/tbody/tr'))
@@ -225,7 +246,7 @@ def get_directors_info(cin, max_attempt = 20):
             companyname = driver.find_elements_by_xpath('//*[@id="resultTab1"]/tbody/tr[2]/td[2]')
             for values in companyname:
                 companyname = values.text
-            
+
             for c in range(0,no_col+1):
                 #print("c",c)
                 #print_details = options.find_elements_by_xpath("//*[@id='block-system-main']/div/div/div[2]/table/tbody/tr["+str(r)+"]/td["+str(c)+"]")
@@ -239,7 +260,7 @@ def get_directors_info(cin, max_attempt = 20):
                     dicts[keys[i]] = my_list[i]
                 #print(dicts)
                 dicts1 = {'cin': cin, 'CompanyName': companyname}
-                
+
                 dict3 = Merge(dicts1, dicts)
                 y = json.dumps(dict3)
                 print("This is json",y)
@@ -249,6 +270,5 @@ def get_directors_info(cin, max_attempt = 20):
             #driver.close()
 
 #test()
-            
 
-            
+
